@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Configure seu Pedido</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Script do Supabase (Ainda necessário no head) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        /* === INÍCIO DO CSS === */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Estilos Gerais */
+        #form-container-wrapper * {
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+            color: #222222;
+        }
+
+        #form-container-wrapper {
+            background-color: #f8fafc;
+            /* bg-slate-50 */
+            padding: 3rem 1rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 56rem;
+            /* max-w-3xl */
+            margin-left: auto;
+            /* Centraliza o container */
+            margin-right: auto;
+        }
+
+        /* Cabeçalho */
+        .header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .header h1 {
+            font-size: 2.25rem;
+            /* text-4xl */
+            font-weight: 700;
+        }
+
+        .header p {
+            margin-top: 0.5rem;
+            color: #6b7280;
+            /* text-gray-500 */
+        }
+
+        /* Indicador de Passos */
+        .steps-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 3rem;
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .step-icon {
+            flex-shrink: 0;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 9999px;
+            /* rounded-full */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .step-icon svg {
+            width: 1.25rem;
+            /* h-5 w-5 */
+            height: 1.25rem;
+        }
+
+        .step-text {
+            margin-left: 1rem;
+            /* ml-4 */
+        }
+
+        @media (max-width: 768px) {
+            .step-text {
+                display: none;
+            }
+        }
+
+        .step-text .label {
+            font-size: 0.875rem;
+            /* text-sm */
+            font-weight: 500;
+        }
+
+        .step-text .title {
+            font-size: 1.125rem;
+            /* text-lg */
+            font-weight: 600;
+        }
+
+        .step-connector {
+            flex: 1;
+            border-top: 2px solid #d1d5db;
+            /* border-gray-300 */
+            margin: 0 1rem;
+            /* mx-4 */
+        }
+
+        /* Estilo do Passo Ativo */
+        .step.active {
+            color: #51ffb4;
+            /* Cor primária */
+        }
+
+        .step.active .step-icon {
+            background-color: #51ffb4;
+            /* Cor primária */
+        }
+
+        .step.active .step-icon svg {
+            stroke: #222222;
+            /* Cor escura para contraste */
+        }
+
+        /* Estilo do Passo Inativo */
+        .step.inactive {
+            color: #9ca3af;
+            /* text-gray-400 */
+        }
+
+        .step.inactive .step-icon {
+            background-color: #9ca3af;
+            /* bg-gray-400 */
+        }
+
+        .step.inactive .step-icon svg {
+            stroke: #ffffff;
+            /* Cor branca para contraste */
+        }
+
+        /* Formulário Principal */
+        main {
+            background-color: #ffffff;
+            border-radius: 1rem;
+            /* rounded-2xl */
+            padding: 2.5rem;
+            /* p-10 */
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            /* shadow-lg */
+        }
+
+        @media (max-width: 768px) {
+            main {
+                padding: 1.5rem;
+                /* p-6 */
+            }
+        }
+
+        .step-content.hidden {
+            display: none;
+        }
+
+        .form-section-header h2 {
+            font-size: 1.5rem;
+            /* text-2xl */
+            font-weight: 600;
+        }
+
+        .form-section-header p {
+            color: #6b7280;
+            /* text-gray-500 */
+            margin-top: 0.25rem;
+            /* mt-1 */
+        }
+
+        /* Grid e Campos */
+        .grid {
+            display: grid;
+            gap: 1.5rem;
+            /* gap-6 */
+            margin-top: 1.5rem;
+            /* mt-6 */
+        }
+
+        .grid-cols-2 {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .grid-cols-4 {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+
+        .col-span-1 {
+            grid-column: span 1 / span 1;
+        }
+
+        .col-span-2 {
+            grid-column: span 2 / span 2;
+        }
+
+        .col-span-3 {
+            grid-column: span 3 / span 3;
+        }
+
+        /* Grid Responsivo */
+        @media (max-width: 768px) {
+
+            .grid-cols-2,
+            .grid-cols-4 {
+                grid-template-columns: repeat(1, minmax(0, 1fr));
+                /* Coluna única em telas menores */
+            }
+
+            .col-span-1,
+            .col-span-2,
+            .col-span-3 {
+                grid-column: span 1 / span 1;
+                /* Garante que todos ocupem a coluna inteira */
+            }
+        }
+
+        label {
+            display: block;
+            font-size: 0.875rem;
+            /* text-sm */
+            font-weight: 500;
+            color: #4b5563;
+            /* text-gray-700 */
+            margin-bottom: 0.5rem;
+            /* mb-2 */
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            /* py-3 px-4 */
+            background-color: #f8fafc;
+            /* bg-slate-50 */
+            border: 1px solid #cbd5e1;
+            /* border-slate-300 */
+            border-radius: 0.5rem;
+            /* rounded-lg */
+            transition: all 0.2s ease;
+            color: #222222 !important;
+            /* Cor do texto explícita */
+            font-size: 1rem;
+            /* Garante tamanho da fonte */
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="tel"]:focus {
+            outline: none;
+            border-color: #51ffb4;
+            /* Cor primária */
+            box-shadow: 0 0 0 2px rgba(81, 255, 180, 0.5);
+            /* Anel de foco */
+        }
+
+        input[type="text"][readonly] {
+            background-color: #f1f5f9;
+            /* bg-slate-100 */
+            color: #64748b;
+            /* text-slate-500 */
+            cursor: not-allowed;
+        }
+
+        input[type="radio"] {
+            height: 1rem;
+            /* h-4 w-4 */
+            width: 1rem;
+            color: #51ffb4;
+            /* Cor primária */
+        }
+
+        input[type="radio"]:focus {
+            box-shadow: 0 0 0 2px rgba(81, 255, 180, 0.5);
+            /* Anel de foco */
+        }
+
+        .radio-group {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            /* gap-6 */
+        }
+
+        .radio-label {
+            display: flex;
+            align-items: center;
+        }
+
+        .radio-label span {
+            margin-left: 0.5rem;
+            /* ml-2 */
+        }
+
+        /* Botões */
+        .form-navigation {
+            margin-top: 2rem;
+            /* mt-8 */
+            padding-top: 1.5rem;
+            /* pt-6 */
+            border-top: 1px solid #e5e7eb;
+            /* border-slate-200 */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .form-navigation .spacer {
+            flex-grow: 1;
+        }
+
+        .btn {
+            font-weight: 600;
+            padding: 0.75rem 2rem;
+            /* py-3 px-8 */
+            border-radius: 0.5rem;
+            /* rounded-lg */
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 0.875rem;
+            /* text-sm */
+        }
+
+        .btn-primary {
+            background-color: #51ffb4;
+            /* Cor primária */
+            color: #222222;
+            /* Cor escura para contraste */
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            /* shadow-md */
+        }
+
+        .btn-primary:hover {
+            background-color: #42d497;
+            /* Variação da cor primária */
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            /* shadow-lg */
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: #374151;
+            /* text-gray-700 */
+        }
+
+        .btn-secondary:hover {
+            background-color: #f3f4f6;
+            /* hover:bg-slate-100 */
+        }
+
+        .btn.hidden {
+            display: none;
+        }
+
+        /* === FIM DO CSS === */
+    </style>
+</head>
+
+<body>
+
+    <div id="form-container-wrapper">
+        <div class="container">
+
+            <header class="header">
+                <h1>Configure seu pedido</h1>
+                <p>Siga os passos para completar sua solicitação.</p>
+            </header>
+
+            <!-- ================================== -->
+            <!--     PASSO 1: MUDANÇA NO INDICADOR  -->
+            <!-- ================================== -->
+            <div class="steps-indicator">
+                <div id="step-indicator-1" class="step active">
+                    <div class="step-icon">
+                        <!-- Ícone de Localização -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                            <circle cx="12" cy="10" r="3" />
+                        </svg>
+                    </div>
+                    <div class="step-text">
+                        <div class="label">Passo 1</div>
+                        <div class="title">Endereço de Instalação</div>
+                    </div>
+                </div>
+                <div class="step-connector"></div>
+                <!-- ================================== -->
+                <!--     PASSO 2: MUDANÇA NO INDICADOR  -->
+                <!-- ================================== -->
+                <div id="step-indicator-2" class="step inactive">
+                    <div class="step-icon">
+                        <!-- Ícone de Usuário -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                        </svg>
+                    </div>
+                    <div class="step-text">
+                        <div class="label">Passo 2</div>
+                        <div class="title">Dados Pessoais</div>
+                    </div>
+                </div>
+            </div>
+
+            <main>
+                <form id="orderForm">
+
+                    <!-- ================================== -->
+                    <!--   PASSO 1: CONTEÚDO DO ENDEREÇO   -->
+                    <!-- ================================== -->
+                    <div id="step-1" class="step-content">
+                        <div class="form-section-header">
+                            <h2>Endereço de Instalação</h2>
+                            <p>Onde o serviço será instalado?</p>
+                        </div>
+                        <div class="grid grid-cols-4">
+                            <div class="col-span-1"><label for="cep">CEP</label><input type="text" id="cep" name="cep"
+                                    required maxlength="9">
+                                <div id="status-cep" style="margin-top: 5px; font-size: 0.875rem; font-weight: 500;">
+                                </div>
+                            </div>
+                            <!-- ================================== -->
+                            <!-- CAMPOS DE ENDEREÇO AGORA EDITÁVEIS -->
+                            <!-- ================================== -->
+                            <div class="col-span-3"><label for="rua">Rua / Logradouro</label><input type="text" id="rua"
+                                    name="rua" required></div>
+                            <div class="col-span-1"><label for="numero">Número</label><input type="text" id="numero"
+                                    name="numero" required></div>
+                            <div class="col-span-3"><label for="complemento">Complemento (Opcional)</label><input
+                                    type="text" id="complemento" name="complemento"></div>
+                            <div class="col-span-2"><label for="bairro">Bairro</label><input type="text" id="bairro"
+                                    name="bairro" required></div>
+                            <div class="col-span-2"><label for="cidade">Cidade - Estado</label><input type="text"
+                                    id="cidade" name="cidade" required></div>
+                        </div>
+                    </div>
+
+                    <!-- ================================== -->
+                    <!--   PASSO 2: CONTEÚDO DOS DADOS     -->
+                    <!-- ================================== -->
+                    <div id="step-2" class="step-content hidden">
+                        <div class="form-section-header">
+                            <h2>Informe seus dados</h2>
+                            <p>Campos obrigatórios, preencha com atenção.</p>
+                        </div>
+                        <div class="grid grid-cols-2">
+                            <div class="col-span-2"><label>Tipo de Documento</label>
+                                <div class="radio-group"><label class="radio-label"><input type="radio" name="doc_type"
+                                            value="CPF" checked><span>CPF</span></label><label
+                                        class="radio-label"><input type="radio" name="doc_type"
+                                            value="CNPJ"><span>CNPJ</span></label></div>
+                            </div>
+                            <div><label for="cpf_cnpj">CPF / CNPJ</label><input type="text" id="cpf_cnpj"
+                                    name="cpf_cnpj" required placeholder="000.000.000-00"></div>
+                            <div><label for="nome">Nome completo</label><input type="text" id="nome" name="nome"
+                                    required></div>
+                            <!-- CAMPO E-MAIL REMOVIDO -->
+                            <div><label for="celular">Celular (com DDD)</label><input type="tel" id="celular"
+                                    name="celular" placeholder="(99) 99999-9999" required maxlength="15"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-navigation">
+                        <button type="button" id="prevBtn" class="btn btn-secondary hidden">Voltar</button>
+                        <div class="spacer"></div>
+                        <!-- ================================== -->
+                        <!--      MUDANÇA NO TEXTO DO BOTÃO     -->
+                        <!-- ================================== -->
+                        <button type="button" id="nextBtn" class="btn btn-primary">Avançar para Dados Pessoais</button>
+                        <button type="submit" id="submitBtn" class="btn btn-primary hidden">Finalizar Pedido</button>
+                    </div>
+                </form>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Adiciona um listener que espera o HTML estar pronto
+        document.addEventListener('DOMContentLoaded', function () {
+
+            console.log("[Form Pedido] DOMContentLoaded disparado. Iniciando configuração...");
+
+            // ==================================================================
+            // DADOS DE CONFIGURAÇÃO (PREENCHIDOS - Verifique se estão corretos)
+            // ==================================================================
+            const SUPABASE_URL = 'https://dxhvvyerojqztakzxwtw.supabase.co';
+            const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR4aHZ2eWVyb2pxenRha3p4d3R3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2NTM1MTUsImV4cCI6MjA3NzIyOTUxNX0.fJC02mCuaj3-uASdEy8OkY1ZXtrgxuRedNOWLclbhXo';
+            const WHATSAPP_NUMBER = "558008810880";
+            
+            // ==================================================================
+            //   ATENÇÃO AQUI: Altere para o nome da sua tabela de CEPs no Supabase
+            // ==================================================================
+            // Coloque o nome da tabela que contém sua base de CEPs importada do CSV.
+            const TABELA_COBERTURA = "cobertura_prefixo"; // <-- Corrigido com base na sua imagem
+            // ==================================================================
+
+
+            let supabaseClient;
+            try {
+                // Validação das chaves e da biblioteca Supabase
+                if (!SUPABASE_URL || SUPABASE_URL.includes('COLE_SUA_URL') || SUPABASE_URL.length < 20) {
+                    throw new Error('URL do Supabase parece inválida ou não configurada.');
+                };
+                if (!SUPABASE_KEY || SUPABASE_KEY.includes('COLE_SUA_CHAVE') || SUPABASE_KEY.length < 50) {
+                    throw new Error('Chave ANON do Supabase parece inválida ou não configurada.');
+                };
+                // Verifica se a biblioteca Supabase (globalmente disponível pelo <script> no HTML) foi carregada
+                if (typeof supabase === 'undefined' || !supabase.createClient) {
+                    throw new Error('Biblioteca Supabase (supabase-js) não foi carregada corretamente. Verifique o <script> no HTML.');
+                };
+
+                // Inicializa o cliente Supabase
+                supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                console.log("[Form Pedido] Supabase Client inicializado com sucesso.");
+
+            } catch (error) {
+                console.error("[Form Pedido] ERRO CRÍTICO ao inicializar o Supabase:", error);
+                const body = document.body;
+                if (body) { // Tenta mostrar erro na tela
+                    const errorDiv = document.createElement('div');
+                    errorDiv.style.color = 'red'; errorDiv.style.backgroundColor = 'white'; errorDiv.style.padding = '10px';
+                    errorDiv.style.border = '1px solid red'; errorDiv.style.position = 'fixed'; errorDiv.style.top = '10px';
+                    errorDiv.style.left = '10px'; errorDiv.style.zIndex = '9999';
+                    errorDiv.innerText = "Erro config JS: " + error.message; body.appendChild(errorDiv);
+                };
+                return; // Interrompe
+            };
+
+            let viabilidadeAprovada = false;
+
+            // Função segura para pegar elementos
+            const getElement = function (id, isRequired = true) {
+                const element = document.getElementById(id);
+                if (!element && isRequired) {
+                    console.error('[Form Pedido] ERRO CRÍTICO: Elemento com ID \'' + id + '\' NÃO encontrado no HTML.');
+                    throw new Error('Elemento essencial \'' + id + '\' não encontrado.');
+                } else if (!element && !isRequired) {
+                    console.warn('[Form Pedido] Elemento opcional com ID \'' + id + '\' não foi encontrado.');
+                };
+                return element;
+            };
+
+            // Seleção de elementos com try-catch
+            let prevBtn, nextBtn, submitBtn, form, cpfCnpjInput, docTypeRadios, celularInput, cepInput, ruaInput, bairroInput, cidadeInput, numeroInput, statusCep, step1Div, step2Div, stepIndicator1, stepIndicator2, steps, stepIndicators;
+            try {
+                prevBtn = getElement('prevBtn', false);
+                nextBtn = getElement('nextBtn');
+                submitBtn = getElement('submitBtn');
+                form = getElement('orderForm');
+                cpfCnpjInput = getElement('cpf_cnpj');
+                docTypeRadios = document.querySelectorAll('input[name="doc_type"]');
+                celularInput = getElement('celular');
+                cepInput = getElement('cep');
+                ruaInput = getElement('rua');
+                bairroInput = getElement('bairro');
+                cidadeInput = getElement('cidade');
+                numeroInput = getElement('numero');
+                statusCep = getElement('status-cep');
+                step1Div = getElement('step-1');
+                step2Div = getElement('step-2');
+                stepIndicator1 = getElement('step-indicator-1');
+                stepIndicator2 = getElement('step-indicator-2');
+
+                if (docTypeRadios.length === 0) {
+                    throw new Error("Nenhum radio button com name='doc_type' encontrado.");
+                };
+
+                steps = [step1Div, step2Div];
+                stepIndicators = [stepIndicator1, stepIndicator2];
+                console.log("[Form Pedido] Todos os elementos essenciais do formulário foram encontrados via getElementById.");
+
+            } catch (error) {
+                console.error("[Form Pedido] ERRO FATAL ao tentar encontrar elementos do formulário:", error);
+                alert("Erro interno no formulário (elementos HTML ausentes). Recarregue a página ou contate o suporte.");
+                return;
+            };
+
+            let currentStep = 0;
+
+            // --- Funções de Formatação (Sintaxe Tradicional) ---
+            const formatCPF = function (value) { return value.replace(/\D/g, '').slice(0, 11).replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2'); };
+            const formatCNPJ = function (value) { return value.replace(/\D/g, '').slice(0, 14).replace(/(\d{2})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1/$2').replace(/(\d{4})(\d{1,2})$/, '$1-$2'); };
+            const formatCelular = function (value) { return value.replace(/\D/g, '').slice(0, 11).replace(/^(\d{2})(\d)/, '($1) $2').replace(/(\d{5})(\d)/, '$1-$2'); };
+            const formatCEP = function (value) { return value.replace(/\D/g, '').slice(0, 8).replace(/(\d{5})(\d)/, '$1-$2'); };
+
+            // --- Event Listeners (Sintaxe Tradicional) ---
+            console.log("[Form Pedido] Adicionando event listeners...");
+
+            cpfCnpjInput.addEventListener('input', function (event) {
+                try {
+                    const docTypeElement = document.querySelector('input[name="doc_type"]:checked');
+                    if (!docTypeElement) return;
+                    const docType = docTypeElement.value;
+                    event.target.value = (docType === 'CPF') ? formatCPF(event.target.value) : formatCNPJ(event.target.value);
+                } catch (e) { console.error("[Form Pedido] Erro no listener de CPF/CNPJ:", e); };
+            });
+
+            if (celularInput) {
+                celularInput.addEventListener('input', function (event) {
+                    try { event.target.value = formatCelular(event.target.value); } catch (e) { console.error("[Form Pedido] Erro no listener de Celular:", e); };
+                });
+            };
+
+            cepInput.addEventListener('input', function (event) {
+                try { event.target.value = formatCEP(event.target.value); } catch (e) { console.error("[Form Pedido] Erro no listener de CEP (input):", e); };
+            });
+
+            docTypeRadios.forEach(function (radio) {
+                radio.addEventListener('change', function () {
+                    try {
+                        const docTypeElement = document.querySelector('input[name="doc_type"]:checked');
+                        if (!docTypeElement) return;
+                        const docType = docTypeElement.value;
+                        cpfCnpjInput.value = '';
+                        cpfCnpjInput.placeholder = (docType === 'CPF') ? '000.000.000-00' : '00.000.000/0000-00';
+                        cpfCnpjInput.maxLength = (docType === 'CPF') ? 14 : 18;
+                    } catch (e) { console.error("[Form Pedido] Erro no listener de 'change' do docType:", e); };
+                });
+            });
+
+            console.log("[Form Pedido] Listeners de formatação adicionados.");
+
+            // --- LÓGICA DE VALIDAÇÃO (ViaCEP + Supabase) - Sintaxe Tradicional ---
+            const limparCamposEndereco = function () {
+                if (ruaInput) ruaInput.value = "";
+                if (bairroInput) bairroInput.value = "";
+                if (cidadeInput) cidadeInput.value = "";
+            };
+
+            // ==================================================================
+            //   LÓGICA DO CEP MODIFICADA (TOLERANTE A FALHAS DO VIACEP)
+            // ==================================================================
+            cepInput.addEventListener('blur', async function () {
+                console.log("[Form Pedido] CEP 'blur' event disparado (Modo Híbrido Tolerante).");
+                const cepDigitado = cepInput.value;
+                viabilidadeAprovada = false; // <-- Reseta a viabilidade
+                statusCep.style.color = "#ef4444";
+                limparCamposEndereco(); // Limpa os campos antes de consultar
+
+                const cepLimpo = cepDigitado.replace(/\D/g, '');
+                if (cepLimpo.length !== 8) {
+                    statusCep.innerText = (cepLimpo.length > 0) ? "CEP inválido." : "";
+                    return;
+                };
+
+                statusCep.innerText = "Consultando endereço...";
+                statusCep.style.color = "#3b82f6";
+
+                let viaCepFalhou = false;
+
+                try {
+                    // ETAPA 1: TENTAR buscar o endereço no ViaCEP (não bloqueia)
+                    console.log("[Form Pedido] Tentando ViaCEP para:", cepLimpo);
+                    const respostaViaCEP = await fetch('https://viacep.com.br/ws/' + cepLimpo + '/json/');
+                    if (!respostaViaCEP.ok) {
+                        throw new Error('Erro na rede do ViaCEP: ' + respostaViaCEP.statusText);
+                    }
+                    const dadosViaCEP = await respostaViaCEP.json();
+                    console.log("[Form Pedido] Dados ViaCEP:", dadosViaCEP);
+
+                    if (dadosViaCEP.erro) {
+                        console.warn("[Form Pedido] ViaCEP não encontrou o CEP.");
+                        viaCepFalhou = true;
+                    } else {
+                        // Preenche os campos com os dados do ViaCEP
+                        ruaInput.value = dadosViaCEP.logradouro || '';
+                        bairroInput.value = dadosViaCEP.bairro || '';
+                        cidadeInput.value = (dadosViaCEP.localidade && dadosViaCEP.uf) ? (dadosViaCEP.localidade + ' - ' + dadosViaCEP.uf) : '';
+                    }
+
+                } catch (erro) {
+                    console.error("[Form Pedido] FALHA AO CONSULTAR VIACEP (não bloqueante):", erro);
+                    viaCepFalhou = true;
+                    // Não definimos statusCep de erro aqui, pois a falha do ViaCEP é opcional.
+                }
+
+                // ETAPA 2: Validar a cobertura no Supabase (OBRIGATÓRIO)
+                try {
+                    statusCep.innerText = "Verificando cobertura...";
+                    console.log("[Form Pedido] Consultando Supabase (tabela: " + TABELA_COBERTURA + ") para CEP:", cepLimpo);
+
+                    const { count, error } = await supabaseClient
+                        .from(TABELA_COBERTURA)
+                        .select('*', { count: 'exact', head: true }) // Apenas conta os registros
+                        .eq('cep', cepLimpo); // Busca pelo CEP de 8 dígitos
+
+                    if (error) {
+                        console.error("[Form Pedido] Erro ao consultar Supabase:", error.message);
+                        throw new Error("Erro na base de dados de cobertura.");
+                    }
+
+                    // Se 'count' > 0, o CEP foi encontrado na sua lista!
+                    if (count !== null && count > 0) {
+                        console.log("[Form Pedido] CEP encontrado na base Supabase!");
+                        statusCep.innerText = "Ótimo! Região atendida.";
+                        statusCep.style.color = "#22c55e"; // Verde
+                        
+                        viabilidadeAprovada = true; // <-- APROVADO!
+                        
+                        // Foca no campo certo
+                        if (viaCepFalhou) {
+                            ruaInput.focus(); // ViaCEP falhou, usuário precisa preencher a rua
+                        } else {
+                            numeroInput.focus(); // ViaCEP funcionou, usuário preenche o número
+                        }
+
+                    } else {
+                        // CEP não está na sua lista de cobertura
+                        console.warn("[Form Pedido] CEP NÃO encontrado na base Supabase:", cepLimpo);
+                        statusCep.innerText = "Que pena! Região (ainda) não atendida.";
+                        statusCep.style.color = "#f97316"; // Laranja
+                        // viabilidadeAprovada continua 'false'
+                    }
+
+                } catch (erro) {
+                    console.error("[Form Pedido] Erro detalhado na cadeia de validação do CEP:", erro);
+                    statusCep.innerText = "Erro ao verificar cobertura.";
+                    statusCep.style.color = "#ef4444"; // Vermelho
+                    // viabilidadeAprovada continua 'false'
+                }
+            });
+            // ==================================================================
+            //   FIM DA LÓGICA DO CEP MODIFICADA
+            // ==================================================================
+
+            console.log("[Form Pedido] Listener de 'blur' do CEP (modo Supabase) adicionado.");
+
+
+            // --- Controle dos Passos (Steps) ---
+            const showStep = function (stepIndex) {
+                console.log("[Form Pedido] Mostrando step:", stepIndex);
+                steps.forEach(function (step, index) {
+                    if (step) step.classList.toggle('hidden', index !== stepIndex);
+                });
+                stepIndicators.forEach(function (indicator, index) {
+                    if (indicator) {
+                        indicator.classList.toggle('active', index === stepIndex);
+                        indicator.classList.toggle('inactive', index !== stepIndex);
+                    };
+                });
+                if (prevBtn) prevBtn.classList.toggle('hidden', stepIndex === 0);
+                if (nextBtn) nextBtn.classList.toggle('hidden', stepIndex === steps.length - 1);
+                if (submitBtn) submitBtn.classList.toggle('hidden', stepIndex !== steps.length - 1);
+            };
+
+            const validateStep = function (stepIndex) {
+                let isValid = true;
+                const currentStepElement = steps[stepIndex];
+                if (!currentStepElement) return false;
+
+                currentStepElement.querySelectorAll('input[required]').forEach(function (field) {
+                    const valueTrimmed = field.value.trim();
+                    // Validar campos required (agora incluindo rua/bairro/cidade)
+                    if (valueTrimmed === "") {
+                        console.warn('[Form Pedido] Campo inválido no step ' + stepIndex + ': \'' + (field.id || field.name) + '\'');
+                        field.style.borderColor = '#ef4444';
+                        isValid = false;
+                    } else {
+                        field.style.borderColor = '#cbd5e1';
+                    };
+                });
+                console.log("[Form Pedido] Validação do step " + stepIndex + ": " + isValid);
+                return isValid;
+            };
+
+            // ==================================
+            //   LÓGICA DO BOTÃO AVANÇAR
+            // ==================================
+            nextBtn.addEventListener('click', function () {
+                console.log("[Form Pedido] Botão 'Avançar' clicado.");
+
+                // 1. Valida campos obrigatórios do passo atual (Endereço)
+                if (!validateStep(currentStep)) {
+                    alert("Por favor, preencha todos os campos obrigatórios.");
+                    return; // Interrompe se campos básicos não foram preenchidos
+                }
+
+                // =======================================================
+                //   AQUI ESTÁ A VALIDAÇÃO PARA AVANÇAR
+                // =======================================================
+                // 2. Validação ADICIONAL para o Passo 1 (Endereço, índice 0)
+                if (currentStep === 0) {
+                    // Se a viabilidade NÃO foi aprovada (após a consulta do 'blur')
+                    if (!viabilidadeAprovada) {
+                        console.log("[Form Pedido] Avanço bloqueado: Viabilidade não aprovada.");
+                        statusCep.innerText = "Por favor, valide um CEP em nossa área de cobertura para avançar.";
+                        statusCep.style.color = "#ef4444";
+                        cepInput.focus();
+                        return; // Interrompe o avanço
+                    }
+                }
+                // =======================================================
+
+                // 3. Se tudo OK (campos preenchidos E viabilidade aprovada), avança
+                currentStep++;
+                if (currentStep < steps.length) {
+                    showStep(currentStep);
+                } else {
+                    currentStep--; // Segurança
+                    console.warn("[Form Pedido] Tentou avançar além do último step.");
+                };
+            });
+
+            if (prevBtn) {
+                prevBtn.addEventListener('click', function () {
+                    console.log("[Form Pedido] Botão 'Voltar' clicado.");
+                    currentStep--;
+                    if (currentStep >= 0) {
+                        showStep(currentStep);
+                    } else {
+                        currentStep++;
+                        console.warn("[Form Pedido] Tentou voltar antes do primeiro step.");
+                    };
+                });
+            };
+
+            // --- Envio do Formulário (Submit) ---
+            form.addEventListener('submit', function (e) {
+                console.log("[Form Pedido] Formulário submetido.");
+                e.preventDefault();
+
+                // Valida o passo ATUAL (agora o passo de Dados Pessoais)
+                if (!validateStep(currentStep)) {
+                    alert("Por favor, preencha todos os campos obrigatórios.");
+                    return;
+                };
+
+                // Esta checagem ainda é válida como uma segurança final, embora a lógica do nextBtn já filtre
+                if (!viabilidadeAprovada) {
+                    console.log("[Form Pedido] Envio bloqueado: Viabilidade não aprovada.");
+                    alert("Houve um erro com a validação do CEP. Por favor, volte e verifique o endereço.");
+                    
+                    // Força a volta para o passo 1
+                    currentStep = 0;
+                    showStep(currentStep);
+                    
+                    statusCep.innerText = "Valide um CEP em nossa área de cobertura.";
+                    statusCep.style.color = "#ef4444";
+                    cepInput.focus();
+                    return;
+                };
+
+                if (!WHATSAPP_NUMBER || WHATSAPP_NUMBER.includes('COLE_SEU_NUMERO') || WHATSAPP_NUMBER.length < 10) {
+                    console.error("[Form Pedido] Número de WhatsApp parece inválido ou não configurado.");
+                    alert("Erro no envio (Configuração de Contato). Contate o administrador.");
+                    return;
+                };
+
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerText = "Enviando...";
+                };
+                console.log("[Form Pedido] Preparando dados para envio...");
+
+                const formData = new FormData(form);
+                let commercialMessage = '⭐ *Novo Pedido Recebido* ⭐\n\n';
+                commercialMessage += '*Nome:* ' + (formData.get('nome') || 'N/A') + '\n';
+                commercialMessage += '*' + (formData.get('doc_type') || 'DOC') + ':* ' + (formData.get('cpf_cnpj') || 'N/A') + '\n';
+                // Linha do E-mail removida
+                commercialMessage += '*Celular:* ' + (formData.get('celular') || 'N/A') + '\n\n';
+                commercialMessage += '*--- ENDEREÇO DE INSTALAÇÃO ---*\n';
+                commercialMessage += '*CEP:* ' + (formData.get('cep') || 'N/A') + '\n';
+                commercialMessage += '*Rua:* ' + (formData.get('rua') || 'N/A') + ', Nº ' + (formData.get('numero') || 'N/A') + '\n';
+                const complemento = formData.get('complemento');
+                if (complemento) { commercialMessage += '*Complemento:* ' + complemento + '\n'; };
+                commercialMessage += '*Bairro:* ' + (formData.get('bairro') || 'N/A') + '\n';
+                commercialMessage += '*Cidade/UF:* ' + (formData.get('cidade') || 'N/A') + '\n';
+
+                console.log("[Form Pedido] --- DADOS PARA O COMERCIAL ---\n", commercialMessage);
+
+                const clientMessage = "Olá! Acabei de preencher o formulário de pedido. Aguardo a verificação da viabilidade de instalação no meu endereço.";
+                const whatsappUrl = 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent(clientMessage);
+                console.log("[Form Pedido] Abrindo URL do WhatsApp:", whatsappUrl);
+
+                window.open(whatsappUrl, '_blank');
+
+                setTimeout(function () {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerText = "Finalizar Pedido";
+                    };
+                    alert("Pedido enviado! Você será redirecionado para o WhatsApp.");
+                    console.log("[Form Pedido] Envio finalizado (timeout).");
+                }, 1500);
+            });
+
+            showStep(currentStep);
+            console.log("[Form Pedido] Configuração do formulário (initForm) concluída com sucesso.");
+
+        }); // Fim do listener DOMContentLoaded
+        // Ponto e vírgula extra para tentar ajudar o minificador do Bitrix
+        ;;
+    </script>
+</body>
+
+</html>
+
+
+
+

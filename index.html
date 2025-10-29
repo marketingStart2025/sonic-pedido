@@ -376,6 +376,45 @@
             display: none;
         }
 
+        /* ================================== */
+        /*     CSS DO TOAST (Notificação)     */
+        /* ================================== */
+        #toast-notification {
+            position: fixed;
+            /* Usando a cor primária do seu site */
+            background-color: #51ffb4;
+            /* Usando a cor de texto do seu site */
+            color: #222222;
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            z-index: 1000;
+            
+            /* Posição e Transição */
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            visibility: hidden;
+            bottom: 0; /* Começa escondido em baixo */
+            transition: opacity 0.5s ease, visibility 0.5s ease, bottom 0.5s ease;
+        }
+
+        /* Estado oculto (default) */
+        #toast-notification.toast-hidden {
+            opacity: 0;
+            visibility: hidden;
+            bottom: 0;
+        }
+
+        /* Estado visível */
+        #toast-notification.toast-visible {
+            opacity: 1;
+            visibility: visible;
+            bottom: 2rem; /* Sobe para 32px */
+        }
+        /* ================================== */
+
+
         /* === FIM DO CSS === */
     </style>
 </head>
@@ -391,7 +430,7 @@
             </header>
 
             <!-- ================================== -->
-            <!--     PASSO 1: MUDANÇA NO INDICADOR  -->
+            <!--     PASSO 1: MUDANÇA NO INDICADOR  -->
             <!-- ================================== -->
             <div class="steps-indicator">
                 <div id="step-indicator-1" class="step active">
@@ -410,7 +449,7 @@
                 </div>
                 <div class="step-connector"></div>
                 <!-- ================================== -->
-                <!--     PASSO 2: MUDANÇA NO INDICADOR  -->
+                <!--     PASSO 2: MUDANÇA NO INDICADOR  -->
                 <!-- ================================== -->
                 <div id="step-indicator-2" class="step inactive">
                     <div class="step-icon">
@@ -432,7 +471,7 @@
                 <form id="orderForm">
 
                     <!-- ================================== -->
-                    <!--   PASSO 1: CONTEÚDO DO ENDEREÇO   -->
+                    <!--   PASSO 1: CONTEÚDO DO ENDEREÇO   -->
                     <!-- ================================== -->
                     <div id="step-1" class="step-content">
                         <div class="form-section-header">
@@ -462,7 +501,7 @@
                     </div>
 
                     <!-- ================================== -->
-                    <!--   PASSO 2: CONTEÚDO DOS DADOS     -->
+                    <!--   PASSO 2: CONTEÚDO DOS DADOS     -->
                     <!-- ================================== -->
                     <div id="step-2" class="step-content hidden">
                         <div class="form-section-header">
@@ -490,7 +529,7 @@
                         <button type="button" id="prevBtn" class="btn btn-secondary hidden">Voltar</button>
                         <div class="spacer"></div>
                         <!-- ================================== -->
-                        <!--      MUDANÇA NO TEXTO DO BOTÃO     -->
+                        <!--      MUDANÇA NO TEXTO DO BOTÃO     -->
                         <!-- ================================== -->
                         <button type="button" id="nextBtn" class="btn btn-primary">Avançar para Dados Pessoais</button>
                         <button type="submit" id="submitBtn" class="btn btn-primary hidden">Finalizar Pedido</button>
@@ -499,6 +538,15 @@
             </main>
         </div>
     </div>
+
+    <!-- ================================== -->
+    <!--         HTML DA NOTIFICAÇÃO         -->
+    <!-- ================================== -->
+    <div id="toast-notification" class="toast-hidden">
+        Mensagem de sucesso!
+    </div>
+    <!-- ================================== -->
+
 
     <script>
         // Adiciona um listener que espera o HTML estar pronto
@@ -514,7 +562,7 @@
             const WHATSAPP_NUMBER = "558008810880";
             
             // ==================================================================
-            //   ATENÇÃO AQUI: Altere para o nome da sua tabela de CEPs no Supabase
+            //   ATENÇÃO AQUI: Altere para o nome da sua tabela de CEPs no Supabase
             // ==================================================================
             // Coloque o nome da tabela que contém sua base de CEPs importada do CSV.
             const TABELA_COBERTURA = "cobertura_prefixo"; // <-- Corrigido com base na sua imagem
@@ -597,11 +645,39 @@
 
             } catch (error) {
                 console.error("[Form Pedido] ERRO FATAL ao tentar encontrar elementos do formulário:", error);
-                alert("Erro interno no formulário (elementos HTML ausentes). Recarregue a página ou contate o suporte.");
+                // Usamos o alert aqui porque a função de toast pode não estar pronta
+                alert("Erro interno no formulário (elementos HTML ausentes). Recarregue a página ou contate o suporte."); 
                 return;
             };
 
             let currentStep = 0;
+
+            // ==================================
+            //     NOVA FUNÇÃO PARA O TOAST
+            // ==================================
+            const showToast = function (message) {
+                // Usando a função getElement que você já tem
+                const toast = getElement('toast-notification', false); 
+                
+                if (!toast) {
+                    // Fallback se o HTML do Passo 1 não for colado
+                    console.warn("Elemento #toast-notification não encontrado. Usando alert() como fallback.");
+                    alert(message); // <-- Fallback para o alert antigo
+                    return;
+                }
+
+                toast.innerText = message;
+                toast.classList.remove('toast-hidden');
+                toast.classList.add('toast-visible');
+
+                // Esconde o toast depois de 4 segundos
+                setTimeout(function () {
+                    toast.classList.remove('toast-visible');
+                    toast.classList.add('toast-hidden');
+                }, 4000); // 4 segundos visível
+            };
+            // ==================================
+
 
             // --- Funções de Formatação (Sintaxe Tradicional) ---
             const formatCPF = function (value) { return value.replace(/\D/g, '').slice(0, 11).replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2'); };
@@ -654,7 +730,7 @@
             };
 
             // ==================================================================
-            //   LÓGICA DO CEP MODIFICADA (TOLERANTE A FALHAS DO VIACEP)
+            //   LÓGICA DO CEP MODIFICADA (TOLERANTE A FALHAS DO VIACEP)
             // ==================================================================
             cepInput.addEventListener('blur', async function () {
                 console.log("[Form Pedido] CEP 'blur' event disparado (Modo Híbrido Tolerante).");
@@ -746,7 +822,7 @@
                 }
             });
             // ==================================================================
-            //   FIM DA LÓGICA DO CEP MODIFICADA
+            //   FIM DA LÓGICA DO CEP MODIFICADA
             // ==================================================================
 
             console.log("[Form Pedido] Listener de 'blur' do CEP (modo Supabase) adicionado.");
@@ -790,19 +866,21 @@
             };
 
             // ==================================
-            //   LÓGICA DO BOTÃO AVANÇAR
+            //   LÓGICA DO BOTÃO AVANÇAR
             // ==================================
             nextBtn.addEventListener('click', function () {
                 console.log("[Form Pedido] Botão 'Avançar' clicado.");
 
                 // 1. Valida campos obrigatórios do passo atual (Endereço)
                 if (!validateStep(currentStep)) {
-                    alert("Por favor, preencha todos os campos obrigatórios.");
+                    // Use a nova função de toast para o erro
+                    showToast("Por favor, preencha todos os campos obrigatórios.");
+                    // alert("Por favor, preencha todos os campos obrigatórios."); // <-- Linha antiga
                     return; // Interrompe se campos básicos não foram preenchidos
                 }
 
                 // =======================================================
-                //   AQUI ESTÁ A VALIDAÇÃO PARA AVANÇAR
+                //   AQUI ESTÁ A VALIDAÇÃO PARA AVANÇAR
                 // =======================================================
                 // 2. Validação ADICIONAL para o Passo 1 (Endereço, índice 0)
                 if (currentStep === 0) {
@@ -847,14 +925,16 @@
 
                 // Valida o passo ATUAL (agora o passo de Dados Pessoais)
                 if (!validateStep(currentStep)) {
-                    alert("Por favor, preencha todos os campos obrigatórios.");
+                    showToast("Por favor, preencha todos os campos obrigatórios.");
+                    // alert("Por favor, preencha todos os campos obrigatórios."); // <-- Linha antiga
                     return;
                 };
 
                 // Esta checagem ainda é válida como uma segurança final, embora a lógica do nextBtn já filtre
                 if (!viabilidadeAprovada) {
                     console.log("[Form Pedido] Envio bloqueado: Viabilidade não aprovada.");
-                    alert("Houve um erro com a validação do CEP. Por favor, volte e verifique o endereço.");
+                    showToast("Houve um erro com a validação do CEP. Volte e verifique.");
+                    // alert("Houve um erro com a validação do CEP. Por favor, volte e verifique o endereço."); // <-- Linha antiga
                     
                     // Força a volta para o passo 1
                     currentStep = 0;
@@ -868,7 +948,8 @@
 
                 if (!WHATSAPP_NUMBER || WHATSAPP_NUMBER.includes('COLE_SEU_NUMERO') || WHATSAPP_NUMBER.length < 10) {
                     console.error("[Form Pedido] Número de WhatsApp parece inválido ou não configurado.");
-                    alert("Erro no envio (Configuração de Contato). Contate o administrador.");
+                    showToast("Erro no envio (Configuração). Contate o administrador.");
+                    // alert("Erro no envio (Configuração de Contato). Contate o administrador."); // <-- Linha antiga
                     return;
                 };
 
@@ -900,14 +981,21 @@
 
                 window.open(whatsappUrl, '_blank');
 
+                // ==================================
+                //     MUDANÇA FINAL: alert() -> showToast()
+                // ==================================
                 setTimeout(function () {
                     if (submitBtn) {
                         submitBtn.disabled = false;
                         submitBtn.innerText = "Finalizar Pedido";
                     };
-                    alert("Pedido enviado! Você será redirecionado para o WhatsApp.");
-                    console.log("[Form Pedido] Envio finalizado (timeout).");
-                }, 1500);
+                    
+                    // AQUI ESTÁ A MUDANÇA
+                    showToast("Pedido enviado! Redirecionando para o WhatsApp...");
+                    // alert("Pedido enviado! Você será redirecionado para o WhatsApp."); // <-- REMOVIDO
+                    
+                    console.log("[Form Pedido] Envio finalizado (toast).");
+                }, 500); // Reduzi o tempo para 0.5s, fica mais rápido
             });
 
             showStep(currentStep);
@@ -920,7 +1008,3 @@
 </body>
 
 </html>
-
-
-
-
